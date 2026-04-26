@@ -1,7 +1,6 @@
-// #include<IRremote.h>
-// const int RemotePin=8;
-// IRrecv irrecv(RemotePin);
-// decode_results results;
+#include <IRremote.hpp>
+
+const int RemotePin = 11;
 
 int ENA = 3;
 int IN1 = 4;
@@ -10,119 +9,78 @@ int IN3 = 6;
 int IN4 = 7;
 int ENB = 9;
 
-int baseSpeed = 200;     // forward speed (0–255)
-int turnFactor = 100;    // how much to slow one side when turning
-
-
-// int in1=3;
-// int in2=5;
-// int in3=6;
-// int in4=9;
-
-// void setup() {
-//   Serial.begin(9600);
-//   // irrecv.enableIRIn();
-//   pinMode(IN1, OUTPUT);
-//   pinMode(IN2, OUTPUT);
-//   pinMode(IN3, OUTPUT);
-//   pinMode(IN4, OUTPUT);
-    
-// }
+int baseSpeed = 200;
+int turnFactor = 100;
 
 void setup() {
-  pinMode(ENA, OUTPUT);
-  pinMode(ENB, OUTPUT);
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-  pinMode(IN3, OUTPUT);
-  pinMode(IN4, OUTPUT);
+  pinMode(ENA, OUTPUT); pinMode(ENB, OUTPUT);
+  pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT); pinMode(IN4, OUTPUT);
 
-  pinMode(ENA, OUTPUT); // Controls Motor A = Front Left motor & Rear Left motor
-  pinMode(ENB, OUTPUT); // Controls Motor B = Front Right motor & Rear Right motor
-
-  // analogWrite(ENA, 200); // Controls Motor A = Front Left motor & Rear Left motor
-  // analogWrite(ENB, 200); // Controls Motor B = Front Right motor & Rear Right motor
+  Serial.begin(9600);
+  IrReceiver.begin(RemotePin, ENABLE_LED_FEEDBACK);
 }
 
 void loop() {
-  
-  Forward();
+  if (IrReceiver.decode()) {
+    uint32_t code = IrReceiver.decodedIRData.decodedRawData;
+    Serial.print("Code: ");
+    Serial.println(code, HEX);
+
+    switch (code) {
+      case 0xBF40FF00: Serial.println("STOP");     Stop();     break;
+      case 0xB946FF00: Serial.println("FORWARD");  Forward();  break;
+      case 0xEA15FF00: Serial.println("BACKWARD"); Backward(); break;
+      case 0xBB44FF00: Serial.println("LEFT");     Left();     break;
+      case 0xBC43FF00: Serial.println("RIGHT");    Right();    break;
+      case 0x00000000: break;
     }
-   
- 
 
-// void Forward() {
-//   // Left motor (A)
-//   digitalWrite(ENA, HIGH);
-//   digitalWrite(ENB, HIGH);
-//   digitalWrite(IN1, HIGH);
-//   digitalWrite(IN2, LOW);
-
-//   // Right motor (B)
-//   digitalWrite(IN3, HIGH);
-//   digitalWrite(IN4, LOW);
-// }
+    IrReceiver.resume();
+  }
+}
 
 void Forward() {
   analogWrite(ENA, baseSpeed);
   analogWrite(ENB, baseSpeed);
-
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
-
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
 }
 
 void Backward() {
+  analogWrite(ENA, baseSpeed);
+  analogWrite(ENB, baseSpeed);
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, HIGH);
-
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, HIGH);
 }
 
+void Left() {
+  analogWrite(ENA, baseSpeed - turnFactor);
+  analogWrite(ENB, baseSpeed);
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+}
+
+void Right() {
+  analogWrite(ENA, baseSpeed);
+  analogWrite(ENB, baseSpeed - turnFactor);
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+}
+
 void Stop() {
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW);
-  digitalWrite(IN4, LOW);
-}
-
-// void Left() {
-//   digitalWrite(IN1, LOW);
-//   digitalWrite(IN2, LOW);   // left stopped
-
-//   digitalWrite(IN3, HIGH);
-//   digitalWrite(IN4, LOW);   // right forward
-// }
-
-void Left() {
-  analogWrite(ENA, baseSpeed - turnFactor); // slow left side
-  analogWrite(ENB, baseSpeed);              // full right side
-
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-}
-
-// void Right() {
-//   digitalWrite(IN1, HIGH);
-//   digitalWrite(IN2, LOW);   // left forward
-
-//   digitalWrite(IN3, LOW);
-//   digitalWrite(IN4, LOW);   // right stopped
-// }
-
-void Right() {
-  analogWrite(ENA, baseSpeed);              // full left side
-  analogWrite(ENB, baseSpeed - turnFactor); // slow right side
-
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-
-  digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
 }
